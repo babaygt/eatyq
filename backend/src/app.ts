@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express, { NextFunction, Request, Response } from 'express'
 import userRoutes from './routes/user'
+import menuRoutes from './routes/menu'
 import morgan from 'morgan'
 import createHttpError, { isHttpError } from 'http-errors'
 import session from 'express-session'
@@ -29,6 +30,7 @@ app.use(
 )
 
 app.use('/api/users', userRoutes)
+app.use('/api/menus', menuRoutes)
 
 app.use((req, res, next) => {
 	const error = createHttpError(404, 'Not found')
