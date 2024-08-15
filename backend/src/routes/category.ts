@@ -1,6 +1,7 @@
 import express from 'express'
 import * as CategoryController from '../controllers/category'
 import { checkAuth } from '../middleware/auth'
+import itemRoutes from './item'
 
 const router = express.Router({ mergeParams: true }) // mergeParams to access menuId from parent router
 
@@ -23,5 +24,8 @@ router.put<{ categoryId: string }>(
 
 // Route to delete a category by ID
 router.delete('/:categoryId', checkAuth, CategoryController.deleteCategory)
+
+// Nest the item routes under the category routes
+router.use('/:categoryId/items', checkAuth, itemRoutes)
 
 export default router
