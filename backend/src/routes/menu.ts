@@ -1,6 +1,7 @@
 import express from 'express'
 import * as MenuController from '../controllers/menu'
 import { checkAuth } from '../middleware/auth'
+import categoryRoutes from './category'
 
 const router = express.Router()
 
@@ -22,5 +23,8 @@ router.patch<{ menuId: string }>(
 
 // Delete a Menu by ID
 router.delete('/:menuId', checkAuth, MenuController.deleteMenu)
+
+// Nest the category routes under the menu routes
+router.use('/:menuId/categories', checkAuth, categoryRoutes)
 
 export default router
