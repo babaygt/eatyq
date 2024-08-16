@@ -1,7 +1,11 @@
+import MainLayout from './layout/MainLayout'
+
 function App() {
 	return (
 		<>
-			<h1>Eatqy</h1>
+			<MainLayout>
+				<h1>Welcome to EatyQ</h1>
+			</MainLayout>
 		</>
 	)
 }
