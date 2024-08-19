@@ -7,12 +7,17 @@ import createHttpError, { isHttpError } from 'http-errors'
 import session from 'express-session'
 import MongoStore from 'connect-mongo'
 import env from './util/validateEnv'
+import cookieParser from 'cookie-parser'
+import cors from 'cors'
+import corsOptions from './config/corsOptions'
 
 const app = express()
 
 app.use(morgan('dev'))
 
+app.use(cors(corsOptions))
 app.use(express.json())
+app.use(cookieParser())
 
 app.use(
 	session({
