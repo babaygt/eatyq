@@ -31,3 +31,11 @@
 		@apply block mx-auto;
 	}
 }
+
+.nav-link {
+	@apply capitalize font-semibold hover:text-green-600 transition-all;
+}
+
+.nav-link-active {
+	@apply text-green-600 border-b-2 border-green-600;
+}
