@@ -1,13 +1,8 @@
-import MainLayout from './layout/MainLayout'
-
-function App() {
+const App = () => {
 	return (
-		<>
-			<MainLayout>
-				<h1>Welcome to EatyQ</h1>
-			</MainLayout>
-		</>
+		<div>
+			<h1>Welcome to the MERN-Eatyq App</h1>
+		</div>
 	)
 }
-
 export default App
