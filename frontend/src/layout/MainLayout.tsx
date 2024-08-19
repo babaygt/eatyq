@@ -1,17 +1,20 @@
 import React, { ReactNode } from 'react'
 import { Toaster } from '@/components/ui/toaster'
+import Header from '@/components/Header'
+import { Outlet } from 'react-router-dom'
 
 interface MainLayoutProps {
-	children: ReactNode
+	children?: ReactNode
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
+const MainLayout: React.FC<MainLayoutProps> = () => {
 	return (
 		<>
-			<body>
-				{children}
+			<div>
+				<Header />
+				<Outlet />
 				<Toaster />
-			</body>
+			</div>
 		</>
 	)
 }

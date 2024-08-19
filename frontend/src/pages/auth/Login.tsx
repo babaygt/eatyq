@@ -1,7 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+
+import { useAuth } from '@/hooks/useAuth'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -14,7 +16,6 @@ import {
 	FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { toast } from '@/components/ui/use-toast'
 
 const FormSchema = z.object({
 	email: z.string().email({
@@ -26,7 +27,7 @@ const FormSchema = z.object({
 })
 
 const Login = () => {
-	const navigate = useNavigate()
+	const { login, isLoggingIn } = useAuth()
 
 	const form = useForm<z.infer<typeof FormSchema>>({
 		resolver: zodResolver(FormSchema),
@@ -37,20 +38,9 @@ const Login = () => {
 	})
 
 	function onSubmit(data: z.infer<typeof FormSchema>) {
-		setTimeout(() => {
-			navigate('/')
-		}, 2000)
-
-		toast({
-			title:
-				'You have successfully logged in! Now you will be redirected to the home page.',
-			description: (
-				<pre className='mt-2 w-[340px] rounded-md bg-slate-950 p-4'>
-					<code className='text-white'>{JSON.stringify(data, null, 2)}</code>
-				</pre>
-			),
-		})
+		login(data)
 	}
+
 	return (
 		<>
 			<Form {...form}>
@@ -60,8 +50,7 @@ const Login = () => {
 				>
 					<h1 className='text-3xl capitalize text-center mb-2'>Login</h1>
 					<p className='text-sm text-slate-500 dark:text-slate-400 text-center'>
-						{' '}
-						Fill in the form below to login.{' '}
+						Fill in the form below to login.
 					</p>
 
 					<FormField
@@ -98,16 +87,26 @@ const Login = () => {
 						Don't have an account?{' '}
 						<Link
 							to='/register'
-							className='text-slate-900 hover:text-slate-700'
+							className='text-green-600 hover:text-green-600/80'
 						>
 							Register
 						</Link>
 					</p>
 
-					<Button type='submit'>Submit</Button>
+					<p className='text-center'>
+						Back to{' '}
+						<Link to='/' className='text-green-600 hover:text-green-600/80'>
+							Homepage
+						</Link>
+					</p>
+
+					<Button type='submit' disabled={isLoggingIn}>
+						{isLoggingIn ? 'Logging in...' : 'Login'}
+					</Button>
 				</form>
 			</Form>
 		</>
 	)
 }
+
 export default Login

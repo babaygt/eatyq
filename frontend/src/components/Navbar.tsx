@@ -1,13 +1,21 @@
+import React from 'react'
 import { NavLink } from 'react-router-dom'
+import { useStoreSelectors } from '@/store/userStore'
+import { useAuth } from '@/hooks/useAuth'
 
-const links = [
-	{ name: 'home', path: '/' },
-	{ name: 'dashboard', path: '/dashboard' },
-	{ name: 'login', path: '/login' },
-	{ name: 'register', path: '/register' },
-]
+type Props = {
+	links: { name: string; path: string }[]
+}
 
-export const Navbar = () => {
+export const Navbar = ({ links }: Props) => {
+	const user = useStoreSelectors.use.user()
+	const { logout, isLoggingOut } = useAuth()
+
+	const handleLogout = (event: React.MouseEvent<HTMLButtonElement>) => {
+		event.preventDefault()
+		logout()
+	}
+
 	return (
 		<nav className='flex gap-8'>
 			{links.map((link, index) => {
@@ -23,6 +31,15 @@ export const Navbar = () => {
 					</NavLink>
 				)
 			})}
+			{user && (
+				<button
+					className='nav-link'
+					onClick={handleLogout}
+					disabled={isLoggingOut}
+				>
+					{isLoggingOut ? 'Logging out...' : 'Logout'}
+				</button>
+			)}
 		</nav>
 	)
 }
