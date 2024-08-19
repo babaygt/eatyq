@@ -60,7 +60,10 @@ export const createUser: RequestHandler<
 
 		req.session.userId = user._id
 
-		res.status(201).json(user)
+		res.status(201).json({
+			username: user.username,
+			email: user.email,
+		})
 	} catch (error) {
 		next(error)
 	}
@@ -100,7 +103,10 @@ export const loginUser: RequestHandler<
 
 		req.session.userId = user._id
 
-		res.status(201).json(user)
+		res.status(200).json({
+			username: user.username,
+			email: user.email,
+		})
 	} catch (error) {
 		next(error)
 	}
