@@ -155,16 +155,17 @@ export const deleteItem: RequestHandler = async (req, res, next) => {
 		const deletedItem = await ItemModel.findByIdAndDelete(itemId)
 
 		if (!deletedItem) {
-			throw createHttpError(404, 'Item not found')
+			return res
+				.status(200)
+				.json({ message: 'Item already deleted or not found' })
 		}
 
 		// Remove the item from the category's item list
-
 		await CategoryModel.findByIdAndUpdate(deletedItem.category, {
 			$pull: { items: deletedItem._id },
 		})
 
-		res.status(204).json({ message: 'Item deleted successfully' })
+		res.status(200).json({ message: 'Item deleted successfully' })
 	} catch (error) {
 		next(error)
 	}
