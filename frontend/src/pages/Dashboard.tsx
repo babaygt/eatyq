@@ -1,15 +1,13 @@
-import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import React, { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useStoreSelectors } from '@/store/userStore'
-import { getMenus } from '@/api/menuApi'
+import { useMenu } from '@/hooks/useMenu'
 import { Button } from '@/components/ui/button'
 import { MenuCard } from '@/components/MenuCard'
 import { CreateMenuModal } from '@/components/CreateMenuModal'
-import { Link, useNavigate } from 'react-router-dom'
-import { Menu } from '@/types'
 import { FaUtensils, FaPlus } from 'react-icons/fa'
+import { toast } from '@/components/ui/use-toast'
 import { AxiosError } from 'axios'
-import { toast } from '../components/ui/use-toast'
 
 type ErrorResponse = {
 	message: string
@@ -24,27 +22,22 @@ const getGreeting = () => {
 	return 'Good night'
 }
 
-const Dashboard = () => {
+const Dashboard: React.FC = () => {
 	const navigate = useNavigate()
 	const user = useStoreSelectors.use.user()
 	const logout = useStoreSelectors.use.logout()
 	const [isCreateMenuModalOpen, setIsCreateMenuModalOpen] = useState(false)
-	const {
-		data: menus,
-		isLoading,
-		error,
-		isError,
-	} = useQuery<Menu[], Error>({
-		queryKey: ['menus'],
-		queryFn: getMenus,
-	})
 
-	if (isLoading)
+	const { menus, isLoading, isError, error } = useMenu()
+
+	if (isLoading) {
 		return (
 			<div className='flex justify-center items-center h-32'>
 				<div className='animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-green-500'></div>
 			</div>
 		)
+	}
+
 	if (isError) {
 		const axiosError = error as AxiosError<ErrorResponse>
 		if (axiosError.response?.status === 401) {
@@ -61,7 +54,7 @@ const Dashboard = () => {
 
 		return (
 			<div className='text-red-500 text-center mt-10'>
-				Error: {error.message}
+				Error: {axiosError.message || 'An unknown error occurred'}
 			</div>
 		)
 	}
