@@ -1,8 +1,7 @@
 import React, { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Item } from '@/types'
-import { updateItem } from '@/api/itemApi'
-import { uploadImage, deleteImage } from '@/api/imageApi'
+import { useItem } from '@/hooks/useItem'
+import { useImage } from '@/hooks/useImage'
 import {
 	Dialog,
 	DialogContent,
@@ -24,7 +23,7 @@ interface EditItemModalProps {
 	item: Item
 	menuId: string
 	categoryId: string
-	onUpdate: (itemId: string, updatedItem: Partial<Item>) => void
+	onUpdate: (updatedItem: Partial<Item>) => void
 }
 
 export const EditItemModal: React.FC<EditItemModalProps> = ({
@@ -45,77 +44,23 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 	const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
 	const [isImageRemoved, setIsImageRemoved] = useState(false)
 
-	const queryClient = useQueryClient()
-
-	const uploadImageMutation = useMutation({
-		mutationFn: uploadImage,
-		onSuccess: (data) => {
-			setImageUrl(data.url)
-			toast({
-				title: 'Image uploaded successfully',
-				variant: 'success',
-			})
-		},
-		onError: (error: Error) => {
-			toast({
-				title: 'Failed to upload image',
-				description: error.message,
-				variant: 'destructive',
-			})
-		},
-	})
-
-	const deleteImageMutation = useMutation({
-		mutationFn: (publicId: string) => deleteImage(publicId),
-		onSuccess: () => {
-			setImageUrl('')
-			setIsImageRemoved(true)
-			toast({
-				title: 'Image deleted successfully',
-				variant: 'success',
-			})
-		},
-		onError: (error: Error) => {
-			toast({
-				title: 'Failed to delete image',
-				description: error.message,
-				variant: 'destructive',
-			})
-		},
-	})
-
-	const updateItemMutation = useMutation({
-		mutationFn: (updatedItem: Partial<Item>) =>
-			updateItem(menuId, categoryId, item._id, updatedItem),
-		onSuccess: (updatedItem) => {
-			queryClient.invalidateQueries({ queryKey: ['items', menuId, categoryId] })
-			onUpdate(item._id, updatedItem)
-			onClose()
-			toast({
-				title: 'Item updated successfully',
-				variant: 'success',
-			})
-		},
-		onError: (error: Error) => {
-			toast({
-				title: 'Failed to update item',
-				description: error.message,
-				variant: 'destructive',
-			})
-		},
-	})
+	const { updateItem } = useItem(menuId, categoryId)
+	const { uploadImage, deleteImage } = useImage()
 
 	const confirmUpdate = async () => {
 		let updatedImageUrl = isImageRemoved ? null : imageUrl
 
 		if (newImage) {
 			try {
-				const uploadResult = await uploadImageMutation.mutateAsync(newImage)
+				const uploadResult = await uploadImage(newImage)
 				updatedImageUrl = uploadResult.url
 			} catch (error) {
 				toast({
 					title: 'Failed to upload new image',
-					description: (error as Error).message,
+					description:
+						error instanceof Error
+							? error.message
+							: 'An unknown error occurred',
 					variant: 'destructive',
 				})
 				return
@@ -130,8 +75,26 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 			variations: variations.length > 0 ? variations : undefined,
 		}
 
-		await updateItemMutation.mutateAsync(updatedItem)
-		setIsConfirmDialogOpen(false)
+		updateItem(
+			{ itemId: item._id, data: updatedItem },
+			{
+				onSuccess: () => {
+					onUpdate(updatedItem) // Call the passed onUpdate prop
+					onClose()
+					setIsConfirmDialogOpen(false)
+				},
+				onError: (error) => {
+					toast({
+						title: 'Failed to update item',
+						description:
+							error instanceof Error
+								? error.message
+								: 'An unknown error occurred',
+						variant: 'destructive',
+					})
+				},
+			}
+		)
 	}
 
 	const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -152,19 +115,22 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 		if (imageUrl) {
 			const publicId = getPublicIdFromUrl(imageUrl)
 			try {
-				await deleteImageMutation.mutateAsync(publicId)
+				await deleteImage(publicId)
+				setImageUrl('')
+				setNewImage(null)
+				setPreviewUrl(null)
+				setIsImageRemoved(true)
 			} catch (error) {
 				toast({
 					title: 'Failed to remove image from server',
-					description: (error as Error).message,
+					description:
+						error instanceof Error
+							? error.message
+							: 'An unknown error occurred',
 					variant: 'destructive',
 				})
 			}
 		}
-		setImageUrl('')
-		setNewImage(null)
-		setPreviewUrl(null)
-		setIsImageRemoved(true)
 	}
 
 	const getPublicIdFromUrl = (url: string) => {
@@ -215,7 +181,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 							<div className='space-y-2'>
 								<Label
 									htmlFor='name'
-									className='text-sm font-semibold  text-gray-700'
+									className='text-sm font-semibold text-gray-700'
 								>
 									Name
 								</Label>
@@ -230,7 +196,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 							<div className='space-y-2'>
 								<Label
 									htmlFor='price'
-									className='text-sm font-semibold  text-gray-700'
+									className='text-sm font-semibold text-gray-700'
 								>
 									Price
 								</Label>
@@ -246,7 +212,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 							<div className='space-y-2 col-span-full'>
 								<Label
 									htmlFor='description'
-									className='text-sm font-semibold  text-gray-700'
+									className='text-sm font-semibold text-gray-700'
 								>
 									Description
 								</Label>
@@ -261,7 +227,7 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 							<div className='space-y-2 col-span-full'>
 								<Label
 									htmlFor='image'
-									className='text-sm font-semibold  text-gray-700'
+									className='text-sm font-semibold text-gray-700'
 								>
 									Image
 								</Label>
@@ -352,14 +318,9 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 						</Button>
 						<Button
 							onClick={handleSubmit}
-							disabled={
-								updateItemMutation.isPending || uploadImageMutation.isPending
-							}
 							className='bg-green-500 hover:bg-green-600 text-white'
 						>
-							{updateItemMutation.isPending || uploadImageMutation.isPending
-								? 'Updating...'
-								: 'Update Item'}
+							Update Item
 						</Button>
 					</DialogFooter>
 				</DialogContent>

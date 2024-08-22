@@ -9,7 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { FaUtensils } from 'react-icons/fa'
-import { Menu } from '@/types' // Import the Menu type from your types file
+import { Menu } from '@/types'
 
 interface MenuCardProps {
 	menu: Menu
@@ -17,6 +17,7 @@ interface MenuCardProps {
 
 export const MenuCard: React.FC<MenuCardProps> = ({ menu }) => {
 	const createdDate = new Date(menu.createdAt).toLocaleDateString()
+	const categoryCount = menu.categories?.length ?? 0
 
 	return (
 		<Card className='w-full max-w-sm hover:shadow-lg transition-shadow duration-300'>
@@ -31,8 +32,7 @@ export const MenuCard: React.FC<MenuCardProps> = ({ menu }) => {
 			<CardContent className='space-y-2'>
 				<div className='flex items-center space-x-2'>
 					<Badge variant='secondary' className='bg-green-100 text-green-600'>
-						{menu.categories?.length ?? 0}{' '}
-						{menu.categories?.length === 1 ? 'Category' : 'Categories'}
+						{categoryCount} {categoryCount === 1 ? 'Category' : 'Categories'}
 					</Badge>
 				</div>
 				<p className='text-sm text-gray-600'>Created on {createdDate}</p>

@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createCategory } from '@/api/categoryApi'
+import { useCategory } from '@/hooks/useCategory'
 import {
 	Dialog,
 	DialogContent,
@@ -11,49 +10,33 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { toast } from '@/components/ui/use-toast'
 import { FaPlus } from 'react-icons/fa'
 
 interface CreateCategoryModalProps {
 	isOpen: boolean
 	onClose: () => void
 	menuId: string
-	onCategoryCreated: () => void
 }
 
 export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
 	isOpen,
 	onClose,
 	menuId,
-	onCategoryCreated,
 }) => {
 	const [categoryName, setCategoryName] = useState('')
-	const queryClient = useQueryClient()
-
-	const createCategoryMutation = useMutation({
-		mutationFn: createCategory,
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['categories', menuId] })
-			onCategoryCreated()
-			setCategoryName('')
-			toast({
-				title: 'Category created successfully',
-				variant: 'success',
-			})
-			onClose()
-		},
-		onError: (error: Error) => {
-			toast({
-				title: 'Failed to create category',
-				description: error.message,
-				variant: 'destructive',
-			})
-		},
-	})
+	const { createCategory } = useCategory(menuId)
 
 	const handleCreateCategory = () => {
 		if (categoryName.trim()) {
-			createCategoryMutation.mutate({ menuId, name: categoryName.trim() })
+			createCategory(
+				{ menuId, name: categoryName.trim() },
+				{
+					onSuccess: () => {
+						setCategoryName('')
+						onClose()
+					},
+				}
+			)
 		}
 	}
 
@@ -93,12 +76,10 @@ export const CreateCategoryModal: React.FC<CreateCategoryModalProps> = ({
 					</Button>
 					<Button
 						onClick={handleCreateCategory}
-						disabled={createCategoryMutation.isPending || !categoryName.trim()}
+						disabled={!categoryName.trim()}
 						className='bg-green-500 hover:bg-green-600 text-white'
 					>
-						{createCategoryMutation.isPending
-							? 'Creating...'
-							: 'Create Category'}
+						Create Category
 					</Button>
 				</DialogFooter>
 			</DialogContent>

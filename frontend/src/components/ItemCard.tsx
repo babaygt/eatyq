@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Item } from '@/types'
+import { useItem } from '@/hooks/useItem'
 import { Button } from '@/components/ui/button'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 import { EditItemModal } from '@/components/EditItemModal'
@@ -16,8 +17,8 @@ interface ItemCardProps {
 	item: Item
 	menuId: string
 	categoryId: string
-	onDelete: (itemId: string) => void
-	onUpdate: (itemId: string, updatedItem: Partial<Item>) => void
+	onDelete: () => void
+	onUpdate: (updatedItem: Partial<Item>) => void
 }
 
 export const ItemCard: React.FC<ItemCardProps> = ({
@@ -29,9 +30,22 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 }) => {
 	const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
 	const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+	const { deleteItem } = useItem(menuId, categoryId)
 
+	const handleDelete = () => {
+		deleteItem(item._id, {
+			onSuccess: () => {
+				setIsDeleteDialogOpen(false)
+				onDelete() // Call the passed onDelete prop
+			},
+		})
+	}
+
+	const handleUpdate = (updatedItem: Partial<Item>) => {
+		onUpdate(updatedItem) // Call the passed onUpdate prop
+	}
 	return (
-		<Card className='flex flex-col h-full rounded-2xl transform transition duration-300 hover:scale-105 hover:shadow-lg '>
+		<Card className='flex flex-col h-full rounded-2xl transform transition duration-300 hover:scale-105 hover:shadow-lg'>
 			{item.imageUrl && (
 				<img
 					src={item.imageUrl}
@@ -92,10 +106,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 			<ConfirmationDialog
 				isOpen={isDeleteDialogOpen}
 				onClose={() => setIsDeleteDialogOpen(false)}
-				onConfirm={() => {
-					onDelete(item._id)
-					setIsDeleteDialogOpen(false)
-				}}
+				onConfirm={handleDelete}
 				title='Delete Item'
 				description='Are you sure you want to delete this item? This action cannot be undone.'
 				confirmText='Delete'
@@ -107,7 +118,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 				item={item}
 				menuId={menuId}
 				categoryId={categoryId}
-				onUpdate={onUpdate}
+				onUpdate={handleUpdate}
 			/>
 		</Card>
 	)

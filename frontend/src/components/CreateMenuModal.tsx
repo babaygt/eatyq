@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createMenu } from '@/api/menuApi'
+import { useMenu } from '@/hooks/useMenu'
 import {
 	Dialog,
 	DialogContent,
@@ -11,7 +10,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { toast } from '@/components/ui/use-toast'
 import { FaPlus } from 'react-icons/fa'
 
 interface CreateMenuModalProps {
@@ -24,31 +22,19 @@ export const CreateMenuModal: React.FC<CreateMenuModalProps> = ({
 	onClose,
 }) => {
 	const [menuName, setMenuName] = useState('')
-	const queryClient = useQueryClient()
-
-	const createMenuMutation = useMutation({
-		mutationFn: createMenu,
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['menus'] })
-			onClose()
-			setMenuName('')
-			toast({
-				title: 'Menu created successfully',
-				variant: 'success',
-			})
-		},
-		onError: (error) => {
-			toast({
-				title: 'Failed to create menu',
-				description: error.message,
-				variant: 'destructive',
-			})
-		},
-	})
+	const { createMenu } = useMenu()
 
 	const handleCreateMenu = () => {
 		if (menuName.trim()) {
-			createMenuMutation.mutate({ name: menuName.trim() })
+			createMenu(
+				{ name: menuName.trim() },
+				{
+					onSuccess: () => {
+						setMenuName('')
+						onClose()
+					},
+				}
+			)
 		}
 	}
 
@@ -88,10 +74,10 @@ export const CreateMenuModal: React.FC<CreateMenuModalProps> = ({
 					</Button>
 					<Button
 						onClick={handleCreateMenu}
-						disabled={createMenuMutation.isPending || !menuName.trim()}
+						disabled={!menuName.trim()}
 						className='bg-green-500 hover:bg-green-600 text-white'
 					>
-						{createMenuMutation.isPending ? 'Creating...' : 'Create Menu'}
+						Create Menu
 					</Button>
 				</DialogFooter>
 			</DialogContent>

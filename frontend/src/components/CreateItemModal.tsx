@@ -1,7 +1,6 @@
-import { useState } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { createItem } from '@/api/itemApi'
-import { uploadImage } from '@/api/imageApi'
+import React, { useState } from 'react'
+import { useItem } from '@/hooks/useItem'
+import { useImage } from '@/hooks/useImage'
 import {
 	Dialog,
 	DialogContent,
@@ -21,7 +20,6 @@ interface CreateItemModalProps {
 	onClose: () => void
 	categoryId: string
 	menuId: string
-	onItemCreated: () => void
 }
 
 export const CreateItemModal: React.FC<CreateItemModalProps> = ({
@@ -29,75 +27,15 @@ export const CreateItemModal: React.FC<CreateItemModalProps> = ({
 	onClose,
 	categoryId,
 	menuId,
-	onItemCreated,
 }) => {
 	const [itemName, setItemName] = useState('')
 	const [itemDescription, setItemDescription] = useState('')
 	const [itemPrice, setItemPrice] = useState('')
 	const [itemImage, setItemImage] = useState<File | null>(null)
-	const queryClient = useQueryClient()
+	const [isLoading, setIsLoading] = useState(false)
 
-	const uploadImageMutation = useMutation({
-		mutationFn: uploadImage,
-		onSuccess: (data) => {
-			toast({
-				title: 'Image uploaded successfully',
-				variant: 'success',
-			})
-			createItemMutation.mutate({
-				menuId,
-				categoryId,
-				name: itemName.trim(),
-				description: itemDescription.trim(),
-				price: parseFloat(itemPrice),
-				imageUrl: data.url,
-			})
-		},
-		onError: (error: Error) => {
-			toast({
-				title: 'Failed to upload image',
-				description: error.message,
-				variant: 'destructive',
-			})
-			onClose() // Close the modal on error
-		},
-	})
-
-	const createItemMutation = useMutation({
-		mutationFn: (data: {
-			menuId: string
-			categoryId: string
-			name: string
-			description: string
-			price: number
-			imageUrl?: string
-		}) =>
-			createItem(data.menuId, {
-				categoryId: data.categoryId,
-				name: data.name,
-				description: data.description,
-				price: data.price,
-				imageUrl: data.imageUrl,
-			}),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['items', menuId, categoryId] })
-			onItemCreated()
-			resetForm()
-			onClose() // Close the modal on success
-			toast({
-				title: 'Item created successfully',
-				variant: 'success',
-			})
-		},
-		onError: (error: Error) => {
-			toast({
-				title: 'Failed to create item',
-				description: error.message,
-				variant: 'destructive',
-			})
-			onClose() // Close the modal on error
-		},
-	})
+	const { createItem } = useItem(menuId, categoryId)
+	const { uploadImage } = useImage()
 
 	const resetForm = () => {
 		setItemName('')
@@ -106,18 +44,47 @@ export const CreateItemModal: React.FC<CreateItemModalProps> = ({
 		setItemImage(null)
 	}
 
-	const handleCreateItem = () => {
+	const handleCreateItem = async () => {
 		if (itemName.trim() && itemPrice) {
-			if (itemImage) {
-				uploadImageMutation.mutate(itemImage)
-			} else {
-				createItemMutation.mutate({
-					menuId,
+			setIsLoading(true)
+			try {
+				let imageUrl: string | undefined
+
+				if (itemImage) {
+					const uploadResult = await uploadImage(itemImage)
+					if (uploadResult && uploadResult.url) {
+						imageUrl = uploadResult.url
+					} else {
+						throw new Error('Image upload failed')
+					}
+				}
+
+				await createItem({
 					categoryId,
 					name: itemName.trim(),
 					description: itemDescription.trim(),
 					price: parseFloat(itemPrice),
+					imageUrl,
 				})
+
+				toast({
+					title: 'Item created successfully',
+					variant: 'success',
+				})
+				resetForm()
+				onClose()
+			} catch (error) {
+				console.error('Error creating item:', error)
+				toast({
+					title: 'Failed to create item',
+					description:
+						error instanceof Error
+							? error.message
+							: 'An unknown error occurred',
+					variant: 'destructive',
+				})
+			} finally {
+				setIsLoading(false)
 			}
 		} else {
 			toast({
@@ -207,22 +174,15 @@ export const CreateItemModal: React.FC<CreateItemModalProps> = ({
 					</div>
 				</div>
 				<DialogFooter>
-					<Button variant='outline' onClick={onClose}>
+					<Button variant='outline' onClick={onClose} disabled={isLoading}>
 						Cancel
 					</Button>
 					<Button
 						onClick={handleCreateItem}
-						disabled={
-							createItemMutation.isPending ||
-							uploadImageMutation.isPending ||
-							!itemName.trim() ||
-							!itemPrice
-						}
+						disabled={isLoading || !itemName.trim() || !itemPrice}
 						className='bg-green-600 hover:bg-green-700'
 					>
-						{createItemMutation.isPending || uploadImageMutation.isPending
-							? 'Creating...'
-							: 'Create Item'}
+						{isLoading ? 'Creating...' : 'Create Item'}
 					</Button>
 				</DialogFooter>
 			</DialogContent>
