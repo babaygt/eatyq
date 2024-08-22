@@ -39,13 +39,29 @@ export const updateItem = async (
 	)
 	return response.data
 }
-
 export const deleteItem = async (
 	menuId: string,
 	categoryId: string,
 	itemId: string
 ): Promise<void> => {
-	await itemApi.delete(`/${menuId}/categories/${categoryId}/items/${itemId}`)
+	try {
+		const response = await itemApi.delete(
+			`/${menuId}/categories/${categoryId}/items/${itemId}`
+		)
+		if (response.status === 200) {
+			return // Successful deletion
+		}
+		throw new Error('Unexpected response from server')
+	} catch (error) {
+		if (axios.isAxiosError(error) && error.response) {
+			console.error(error.response)
+			if (error.response.status === 404) {
+				return
+			}
+			throw new Error(error.response.data.message || 'Failed to delete item')
+		}
+		throw error
+	}
 }
 
 export default itemApi
