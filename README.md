@@ -17,8 +17,9 @@ Welcome to **EatyQ**! This project allows users to effortlessly create and manag
   - [API Endpoints](#api-endpoints)
   - [Usage](#usage)
     - [Authentication](#authentication)
-    - [QR Code Generation (Upcoming)](#qr-code-generation-upcoming)
-    - [Public Menu Page (Upcoming)](#public-menu-page-upcoming)
+    - [QR Code Generation](#qr-code-generation)
+    - [Public Menu Page](#public-menu-page)
+    - [Search Functionality](#search-functionality)
   - [Contributing](#contributing)
   - [License](#license)
 
@@ -29,7 +30,9 @@ Welcome to **EatyQ**! This project allows users to effortlessly create and manag
 - **Category Management:** Organize menu items into categories.
 - **Item Management:** Add, update, and delete items with options for variations.
 - **Image Uploads:** Upload item images using Cloudinary.
-- **Interactive QR Codes:** (Upcoming) Generate QR codes for public menu pages.
+- **Interactive QR Codes:** Generate and download QR codes for public menu pages.
+- **Public Menu Page:** Customer-facing menu view accessible via QR code.
+- **Search Functionality:** Search items by name or description in both admin and public views.
 - **Responsive Design:** User-friendly interface with ShadcnUI and TailwindCSS.
 
 ## Tech Stack
@@ -38,7 +41,8 @@ Welcome to **EatyQ**! This project allows users to effortlessly create and manag
 - **Backend:** Node.js, Express, TypeScript, MongoDB, Mongoose
 - **Authentication:** Express-Session, bcrypt
 - **Image Uploads:** Cloudinary, Multer
-- **QR Code Generation:** (Upcoming)
+- **QR Code Generation:** qrcode.react
+- **QR Code Image Generation:** html2canvas
 
 ## Project Structure
 
@@ -167,15 +171,28 @@ CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 2. From the dashboard, create a new menu.
 3. Add categories to your menu.
 4. Add items to your categories, including descriptions, prices, and images.
-5. Generate a QR code for your menu to share with customers. (Upcoming)
 
-### QR Code Generation (Upcoming)
+### QR Code Generation
 
-The QR code generation functionality is currently under development and will be available soon. This feature will allow restaurant owners to generate QR codes for each menu. Customers can scan these QR codes to directly access the restaurant’s digital menu page.
+1. Navigate to the menu page for which you want to generate a QR code.
+2. Click the "Show QR Code" button to display the QR code.
+3. Use the "Download QR Code" button to save the QR code as an image.
+4. The QR code can be styled or plain. Toggle between styles using the provided button.
 
-### Public Menu Page (Upcoming)
+### Public Menu Page
 
-The public menu page is accessible via a unique URL generated along with the QR code. It displays the restaurant's menu in an interactive format, allowing patrons to browse categories and items.
+The public menu page is now fully implemented and accessible via a unique URL generated along with the QR code. It displays the restaurant's menu in an interactive format, allowing patrons to:
+
+- Browse categories
+- View item details including descriptions, prices, and images
+- Search for specific items
+
+### Search Functionality
+
+1. On both the admin menu page and the public menu page, you'll find a search bar above the list of items.
+2. Enter a search term to filter items by name or description.
+3. The list of items will update in real-time as you type.
+4. This feature helps both restaurant managers and customers quickly find specific items.
 
 ## Contributing
 
