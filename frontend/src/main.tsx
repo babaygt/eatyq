@@ -11,7 +11,8 @@ import LoginPage from './pages/auth/Login.tsx'
 import ErrorPage from './pages/ErrorPage'
 import App from './App.tsx'
 import Dashboard from './pages/Dashboard'
-import MenuPage from './pages/MenuPage' // Import the MenuPage component
+import MenuPage from './pages/MenuPage'
+import PublicMenuPage from './pages/PublicMenuPage'
 
 import './index.css'
 
@@ -32,6 +33,10 @@ const router = createBrowserRouter([
 			{
 				path: 'menu/:menuId',
 				element: <MenuPage />,
+			},
+			{
+				path: '/menu/:menuId/public',
+				element: <PublicMenuPage />,
 			},
 		],
 	},
