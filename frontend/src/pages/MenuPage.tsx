@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import React, { useState, useMemo } from 'react'
+import { useParams, useNavigate, generatePath } from 'react-router-dom'
 import { useMenu } from '@/hooks/useMenu'
 import { useCategory } from '@/hooks/useCategory'
 import { useItem } from '@/hooks/useItem'
@@ -9,7 +9,9 @@ import { CreateCategoryModal } from '@/components/CreateCategoryModal'
 import { CreateItemModal } from '@/components/CreateItemModal'
 import { ItemCard } from '@/components/ItemCard'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
-import { FaUtensils, FaPlus, FaTrash } from 'react-icons/fa'
+import QRCodeComponent from '@/components/QRCodeComponent'
+import { SearchBar } from '@/components/SearchBar'
+import { FaUtensils, FaPlus, FaTrash, FaQrcode } from 'react-icons/fa'
 import { Item } from '@/types'
 
 const MenuPage: React.FC = () => {
@@ -23,6 +25,8 @@ const MenuPage: React.FC = () => {
 	)
 	const [isDeleteMenuDialogOpen, setIsDeleteMenuDialogOpen] = useState(false)
 	const [deleteCategoryId, setDeleteCategoryId] = useState<string | null>(null)
+	const [isQRCodeVisible, setIsQRCodeVisible] = useState(false)
+	const [searchTerm, setSearchTerm] = useState('')
 
 	const { useMenuById, deleteMenu } = useMenu()
 	const { categories, deleteCategory } = useCategory(menuId!)
@@ -30,6 +34,16 @@ const MenuPage: React.FC = () => {
 		menuId!,
 		selectedCategoryId!
 	)
+
+	const filteredItems = useMemo(() => {
+		return (
+			items?.filter(
+				(item) =>
+					item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+					item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+			) || []
+		)
+	}, [items, searchTerm])
 
 	const { data: menu, isLoading: isMenuLoading } = useMenuById(menuId!)
 
@@ -57,6 +71,11 @@ const MenuPage: React.FC = () => {
 		})
 	}
 
+	const publicMenuPath = generatePath('/menu/:menuId/public', {
+		menuId: menuId ?? '',
+	})
+	const publicMenuUrl = `${window.location.origin}${publicMenuPath}`
+
 	return (
 		<div className='container mx-auto p-4 max-w-7xl'>
 			<header className='bg-green-100 rounded-lg p-6 mb-8 shadow-md'>
@@ -65,17 +84,32 @@ const MenuPage: React.FC = () => {
 						<FaUtensils className='mr-2' />
 						{menu.name}
 					</h1>
-					<Button
-						variant='destructive'
-						onClick={() => setIsDeleteMenuDialogOpen(true)}
-						className='flex items-center'
-					>
-						<FaTrash className='mr-2' />
-						Delete Menu
-					</Button>
+					<div className='flex space-x-2'>
+						<Button
+							onClick={() => setIsQRCodeVisible(!isQRCodeVisible)}
+							className='bg-blue-500 hover:bg-blue-600'
+						>
+							<FaQrcode className='mr-2' />
+							{isQRCodeVisible ? 'Hide QR Code' : 'Show QR Code'}
+						</Button>
+						<Button
+							variant='destructive'
+							onClick={() => setIsDeleteMenuDialogOpen(true)}
+							className='flex items-center'
+						>
+							<FaTrash className='mr-2' />
+							Delete Menu
+						</Button>
+					</div>
 				</div>
 			</header>
 
+			{isQRCodeVisible && (
+				<section className='mb-8 bg-white rounded-lg p-6 shadow-md'>
+					<h2 className='text-2xl font-semibold text-gray-700 mb-4'>QR Code</h2>
+					<QRCodeComponent url={publicMenuUrl} menuName={menu.name} />
+				</section>
+			)}
 			<section className='mb-8 container'>
 				<div className='flex justify-between items-center mb-4'>
 					<h2 className='text-2xl font-semibold text-gray-700'>Categories</h2>
@@ -104,6 +138,9 @@ const MenuPage: React.FC = () => {
 				<section className='bg-gray-50 rounded-lg p-6 shadow-md'>
 					<div className='flex justify-between items-center mb-4'>
 						<h2 className='text-2xl font-semibold text-gray-700'>Items</h2>
+						<div className='w-1/2 '>
+							<SearchBar onSearch={setSearchTerm} />
+						</div>
 						<Button
 							onClick={() => setIsCreateItemModalOpen(true)}
 							className='bg-green-600 hover:bg-green-700'
@@ -112,8 +149,9 @@ const MenuPage: React.FC = () => {
 							Add Item
 						</Button>
 					</div>
+
 					<div className='grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4'>
-						{items?.map((item) => (
+						{filteredItems.map((item) => (
 							<ItemCard
 								key={item._id}
 								item={item}
