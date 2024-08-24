@@ -1,12 +1,13 @@
+import React from 'react'
 import { Outlet } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 
-const AuthLayout = () => {
+const AuthLayout: React.FC = () => {
 	return (
-		<section className='h-cover flex items-center justify-center '>
+		<div className='min-h-screen bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center p-4'>
 			<Outlet />
 			<Toaster />
-		</section>
+		</div>
 	)
 }
 

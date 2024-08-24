@@ -1,21 +1,19 @@
-import React, { ReactNode } from 'react'
+import React from 'react'
 import { Toaster } from '@/components/ui/toaster'
 import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 import { Outlet } from 'react-router-dom'
 
-interface MainLayoutProps {
-	children?: ReactNode
-}
-
-const MainLayout: React.FC<MainLayoutProps> = () => {
+const MainLayout: React.FC = () => {
 	return (
-		<>
-			<div>
-				<Header />
+		<div className='flex flex-col min-h-screen'>
+			<Header />
+			<main className='flex-grow'>
 				<Outlet />
-				<Toaster />
-			</div>
-		</>
+			</main>
+			<Footer />
+			<Toaster />
+		</div>
 	)
 }
 
