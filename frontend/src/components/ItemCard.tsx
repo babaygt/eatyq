@@ -44,6 +44,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 	const handleUpdate = (updatedItem: Partial<Item>) => {
 		onUpdate(updatedItem) // Call the passed onUpdate prop
 	}
+	console.log(item)
 	return (
 		<Card className='flex flex-col h-full rounded-2xl transform transition duration-300 hover:scale-105 hover:shadow-lg'>
 			{item.imageUrl && (
@@ -60,7 +61,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 						variant='secondary'
 						className='text-sm bg-green-100 text-green-800'
 					>
-						${item.price.toFixed(2)}
+						{item.currency}
+						{item.price.toFixed(2)}
 					</Badge>
 				</CardTitle>
 			</CardHeader>
@@ -82,7 +84,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 										variant='secondary'
 										className='text-sm bg-green-100 text-green-800 group-hover:bg-green-200 group-hover:text-green-900 transition-colors duration-200'
 									>
-										${variation.price?.toFixed(2) || 'N/A'}
+										{item.currency}
+										{variation.price?.toFixed(2) || 'N/A'}
 									</Badge>
 								</li>
 							))}

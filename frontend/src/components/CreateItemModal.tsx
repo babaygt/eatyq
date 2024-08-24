@@ -1,4 +1,7 @@
 import React, { useState } from 'react'
+import { useForm, useFieldArray, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { useItem } from '@/hooks/useItem'
 import { useImage } from '@/hooks/useImage'
 import {
@@ -13,7 +16,31 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
-import { FaPlus, FaUpload } from 'react-icons/fa'
+import { FaPlus, FaUpload, FaTrash } from 'react-icons/fa'
+import { CurrencyCombobox } from '@/components/CurrencyCombobox'
+
+const itemSchema = z.object({
+	name: z.string().min(1, 'Name is required'),
+	description: z.string().optional(),
+	price: z
+		.string()
+		.refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+			message: 'Price must be a positive number',
+		}),
+	currency: z.string().min(1, 'Currency is required'),
+	variations: z.array(
+		z.object({
+			name: z.string().min(1, 'Variation name is required'),
+			price: z
+				.string()
+				.refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+					message: 'Variation price must be a non-negative number',
+				}),
+		})
+	),
+})
+
+type ItemFormData = z.infer<typeof itemSchema>
 
 interface CreateItemModalProps {
 	isOpen: boolean
@@ -28,163 +55,324 @@ export const CreateItemModal: React.FC<CreateItemModalProps> = ({
 	categoryId,
 	menuId,
 }) => {
-	const [itemName, setItemName] = useState('')
-	const [itemDescription, setItemDescription] = useState('')
-	const [itemPrice, setItemPrice] = useState('')
 	const [itemImage, setItemImage] = useState<File | null>(null)
+	const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
 
 	const { createItem } = useItem(menuId, categoryId)
 	const { uploadImage } = useImage()
 
+	const {
+		control,
+		handleSubmit,
+		reset,
+		formState: { errors },
+	} = useForm<ItemFormData>({
+		resolver: zodResolver(itemSchema),
+		defaultValues: {
+			name: '',
+			description: '',
+			price: '',
+			currency: '$',
+			variations: [],
+		},
+	})
+
+	const { fields, append, remove } = useFieldArray({
+		control,
+		name: 'variations',
+	})
+
 	const resetForm = () => {
-		setItemName('')
-		setItemDescription('')
-		setItemPrice('')
+		reset()
 		setItemImage(null)
+		setPreviewUrl(null)
 	}
 
-	const handleCreateItem = async () => {
-		if (itemName.trim() && itemPrice) {
-			setIsLoading(true)
-			try {
-				let imageUrl: string | undefined
+	const onSubmit = async (data: ItemFormData) => {
+		setIsLoading(true)
+		try {
+			let imageUrl: string | undefined
 
-				if (itemImage) {
-					const uploadResult = await uploadImage(itemImage)
-					if (uploadResult && uploadResult.url) {
-						imageUrl = uploadResult.url
-					} else {
-						throw new Error('Image upload failed')
-					}
+			if (itemImage) {
+				const uploadResult = await uploadImage(itemImage)
+				if (uploadResult && uploadResult.url) {
+					imageUrl = uploadResult.url
+				} else {
+					throw new Error('Image upload failed')
 				}
-
-				await createItem({
-					categoryId,
-					name: itemName.trim(),
-					description: itemDescription.trim(),
-					price: parseFloat(itemPrice),
-					imageUrl,
-				})
-
-				toast({
-					title: 'Item created successfully',
-					variant: 'success',
-				})
-				resetForm()
-				onClose()
-			} catch (error) {
-				console.error('Error creating item:', error)
-				toast({
-					title: 'Failed to create item',
-					description:
-						error instanceof Error
-							? error.message
-							: 'An unknown error occurred',
-					variant: 'destructive',
-				})
-			} finally {
-				setIsLoading(false)
 			}
-		} else {
+
+			await createItem({
+				categoryId,
+				name: data.name.trim(),
+				description: data.description?.trim(),
+				price: parseFloat(data.price),
+				currency: data.currency,
+				imageUrl,
+				variations: data.variations.map((v) => ({
+					name: v.name,
+					price: parseFloat(v.price),
+				})),
+			})
+
 			toast({
-				title: 'Invalid input',
-				description: 'Please provide a name and price for the item.',
+				title: 'Item created successfully',
+				variant: 'success',
+			})
+			resetForm()
+			onClose()
+		} catch (error) {
+			console.error('Error creating item:', error)
+			toast({
+				title: 'Failed to create item',
+				description:
+					error instanceof Error ? error.message : 'An unknown error occurred',
 				variant: 'destructive',
 			})
+		} finally {
+			setIsLoading(false)
 		}
 	}
-
 	const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (e.target.files && e.target.files[0]) {
-			setItemImage(e.target.files[0])
+			const file = e.target.files[0]
+			setItemImage(file)
+
+			const reader = new FileReader()
+			reader.onloadend = () => {
+				setPreviewUrl(reader.result as string)
+			}
+			reader.readAsDataURL(file)
 		}
 	}
 
 	return (
 		<Dialog open={isOpen} onOpenChange={onClose}>
-			<DialogContent className='sm:max-w-[425px]'>
+			<DialogContent className='sm:max-w-[600px] max-h-[90vh] bg-white rounded-lg flex flex-col'>
 				<DialogHeader>
 					<DialogTitle className='text-2xl font-semibold text-green-700 flex items-center'>
 						<FaPlus className='mr-2' />
 						Create New Item
 					</DialogTitle>
 				</DialogHeader>
-				<div className='grid gap-4 py-4'>
-					<div className='grid grid-cols-4 items-center gap-4'>
-						<Label htmlFor='itemName' className='text-right'>
-							Name
-						</Label>
-						<Input
-							id='itemName'
-							value={itemName}
-							onChange={(e) => setItemName(e.target.value)}
-							placeholder='Enter item name'
-							className='col-span-3'
-						/>
-					</div>
-					<div className='grid grid-cols-4 items-center gap-4'>
-						<Label htmlFor='itemDescription' className='text-right'>
-							Description
-						</Label>
-						<Textarea
-							id='itemDescription'
-							value={itemDescription}
-							onChange={(e) => setItemDescription(e.target.value)}
-							placeholder='Enter item description'
-							className='col-span-3'
-						/>
-					</div>
-					<div className='grid grid-cols-4 items-center gap-4'>
-						<Label htmlFor='itemPrice' className='text-right'>
-							Price
-						</Label>
-						<Input
-							id='itemPrice'
-							type='number'
-							value={itemPrice}
-							onChange={(e) => setItemPrice(e.target.value)}
-							placeholder='Enter item price'
-							className='col-span-3'
-						/>
-					</div>
-					<div className='grid grid-cols-4 items-center gap-4'>
-						<Label htmlFor='itemImage' className='text-right'>
-							Image
-						</Label>
-						<div className='col-span-3'>
-							<Input
-								id='itemImage'
-								type='file'
-								onChange={handleImageChange}
-								accept='image/*'
-								className='hidden'
-							/>
+				<form
+					onSubmit={handleSubmit(onSubmit)}
+					className='flex-grow overflow-y-auto px-4 py-2'
+				>
+					<div className='space-y-4'>
+						<div className='space-y-2'>
 							<Label
-								htmlFor='itemImage'
-								className='flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50'
+								htmlFor='name'
+								className='text-sm font-semibold text-gray-700'
 							>
-								<FaUpload className='mr-2' />
-								{itemImage ? 'Change Image' : 'Upload Image'}
+								Name
 							</Label>
-							{itemImage && (
-								<p className='mt-2 text-sm text-gray-500'>{itemImage.name}</p>
+							<Controller
+								name='name'
+								control={control}
+								render={({ field }) => (
+									<Input
+										{...field}
+										placeholder='Enter item name'
+										className='w-full border-green-500 focus:ring-green-500 focus:border-green-500'
+									/>
+								)}
+							/>
+							{errors.name && (
+								<p className='text-red-500 text-xs'>{errors.name.message}</p>
 							)}
 						</div>
+
+						<div className='flex space-x-4'>
+							<div className='flex-1 space-y-2'>
+								<Label
+									htmlFor='price'
+									className='text-sm font-semibold text-gray-700'
+								>
+									Price
+								</Label>
+								<Controller
+									name='price'
+									control={control}
+									render={({ field }) => (
+										<Input
+											{...field}
+											type='number'
+											step='0.01'
+											placeholder='Enter item price'
+											className='w-full border-green-500 focus:ring-green-500 focus:border-green-500'
+										/>
+									)}
+								/>
+								{errors.price && (
+									<p className='text-red-500 text-xs'>{errors.price.message}</p>
+								)}
+							</div>
+
+							<div className='flex-1 space-y-2'>
+								<Label
+									htmlFor='currency'
+									className='text-sm font-semibold text-gray-700'
+								>
+									Currency
+								</Label>
+								<Controller
+									name='currency'
+									control={control}
+									render={({ field }) => (
+										<CurrencyCombobox
+											value={field.value}
+											onChange={(value) => field.onChange(value)}
+										/>
+									)}
+								/>
+								{errors.currency && (
+									<p className='text-red-500 text-xs'>
+										{errors.currency.message}
+									</p>
+								)}
+							</div>
+						</div>
+						<div className='space-y-2 col-span-full'>
+							<Label
+								htmlFor='description'
+								className='text-sm font-semibold text-gray-700'
+							>
+								Description
+							</Label>
+							<Controller
+								name='description'
+								control={control}
+								render={({ field }) => (
+									<Textarea
+										{...field}
+										placeholder='Enter item description'
+										className='border-green-500 focus:ring-green-500 focus:border-green-500'
+									/>
+								)}
+							/>
+						</div>
+						<div className='space-y-2 col-span-full'>
+							<Label
+								htmlFor='image'
+								className='text-sm font-semibold text-gray-700'
+							>
+								Image
+							</Label>
+							{previewUrl && (
+								<img
+									src={previewUrl}
+									alt='Item preview'
+									className='w-1/2 h-48 object-cover rounded mb-2 p-1 border border-green-600'
+								/>
+							)}
+							<div className='flex items-center'>
+								<Input
+									id='image'
+									type='file'
+									onChange={handleImageChange}
+									accept='image/*'
+									className='hidden'
+								/>
+								<Label
+									htmlFor='image'
+									className='cursor-pointer bg-green-500 text-white py-2 px-4 h-10 rounded hover:bg-green-600 transition duration-300 flex items-center'
+								>
+									<FaUpload className='mr-2' />
+									{itemImage ? 'Change Image' : 'Upload Image'}
+								</Label>
+								{itemImage && (
+									<p className='mt-2 text-sm text-gray-500'>{itemImage.name}</p>
+								)}
+							</div>
+						</div>
+						<div className='space-y-2 col-span-full'>
+							<Label className='text-sm font-semibold text-gray-700 block'>
+								Variations
+							</Label>
+							{fields.map((field, index) => (
+								<div key={field.id} className='flex gap-2 mb-2'>
+									<Controller
+										name={`variations.${index}.name` as const}
+										control={control}
+										render={({ field }) => (
+											<Input
+												{...field}
+												placeholder='Variation Name'
+												className='border-green-500 focus:ring-green-500 focus:border-green-500'
+											/>
+										)}
+									/>
+									<Controller
+										name={`variations.${index}.price` as const}
+										control={control}
+										render={({ field }) => (
+											<Input
+												{...field}
+												type='number'
+												step='0.01'
+												placeholder='Variation Price'
+												className='border-green-500 focus:ring-green-500 focus:border-green-500'
+											/>
+										)}
+									/>
+									<Button
+										onClick={() => remove(index)}
+										variant='destructive'
+										className='px-2 py-0'
+										type='button'
+									>
+										<FaTrash />
+									</Button>
+								</div>
+							))}
+							{errors.variations && (
+								<p className='text-red-500 text-xs mt-1'>
+									{errors.variations.message}
+								</p>
+							)}
+							{fields.map((field, index) => (
+								<React.Fragment key={field.id}>
+									{errors.variations?.[index]?.name && (
+										<p className='text-red-500 text-xs mt-1'>
+											{errors.variations[index]?.name?.message}
+										</p>
+									)}
+									{errors.variations?.[index]?.price && (
+										<p className='text-red-500 text-xs mt-1'>
+											{errors.variations[index]?.price?.message}
+										</p>
+									)}
+								</React.Fragment>
+							))}
+							<Button
+								onClick={() => append({ name: '', price: '' })}
+								type='button'
+								className='mt-2 bg-green-500 hover:bg-green-600'
+							>
+								<FaPlus className='mr-2' /> Add Variation
+							</Button>
+						</div>
 					</div>
-				</div>
-				<DialogFooter>
-					<Button variant='outline' onClick={onClose} disabled={isLoading}>
-						Cancel
-					</Button>
-					<Button
-						onClick={handleCreateItem}
-						disabled={isLoading || !itemName.trim() || !itemPrice}
-						className='bg-green-600 hover:bg-green-700'
-					>
-						{isLoading ? 'Creating...' : 'Create Item'}
-					</Button>
-				</DialogFooter>
+					<DialogFooter className='flex-shrink-0 sm:justify-end mt-4'>
+						<Button
+							variant='outline'
+							onClick={onClose}
+							disabled={isLoading}
+							type='button'
+						>
+							Cancel
+						</Button>
+						<Button
+							type='submit'
+							disabled={isLoading}
+							className='bg-green-600 hover:bg-green-700'
+						>
+							{isLoading ? 'Creating...' : 'Create Item'}
+						</Button>
+					</DialogFooter>
+				</form>
 			</DialogContent>
 		</Dialog>
 	)

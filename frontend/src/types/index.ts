@@ -28,6 +28,7 @@ export interface Item {
 	name: string
 	description?: string
 	price: number
+	currency?: string
 	imageUrl?: string | null
 	public_id?: string
 	variations?: {
@@ -52,6 +53,7 @@ export interface CreateItemInput {
 	name: string
 	description?: string
 	price: number
+	currency?: string
 	imageUrl?: string | null
 	variations?: {
 		name: string

@@ -1,4 +1,7 @@
 import React, { useState } from 'react'
+import { useForm, useFieldArray, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { Item } from '@/types'
 import { useItem } from '@/hooks/useItem'
 import { useImage } from '@/hooks/useImage'
@@ -16,6 +19,30 @@ import { Label } from '@/components/ui/label'
 import { ConfirmationDialog } from '@/components/ConfirmationDialog'
 import { toast } from '@/components/ui/use-toast'
 import { FaEdit, FaPlus, FaTrash, FaUpload } from 'react-icons/fa'
+import { CurrencyCombobox } from '@/components/CurrencyCombobox'
+
+const itemSchema = z.object({
+	name: z.string().min(1, 'Name is required'),
+	description: z.string().optional(),
+	price: z
+		.string()
+		.refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, {
+			message: 'Price must be a positive number',
+		}),
+	currency: z.string().min(1, 'Currency is required'),
+	variations: z.array(
+		z.object({
+			name: z.string().min(1, 'Variation name is required'),
+			price: z
+				.string()
+				.refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) >= 0, {
+					message: 'Variation price must be a non-negative number',
+				}),
+		})
+	),
+})
+
+type ItemFormData = z.infer<typeof itemSchema>
 
 interface EditItemModalProps {
 	isOpen: boolean
@@ -34,20 +61,40 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 	categoryId,
 	onUpdate,
 }) => {
-	const [name, setName] = useState(item.name)
-	const [description, setDescription] = useState(item.description || '')
-	const [price, setPrice] = useState(item.price.toString())
 	const [imageUrl, setImageUrl] = useState(item.imageUrl || '')
 	const [newImage, setNewImage] = useState<File | null>(null)
 	const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-	const [variations, setVariations] = useState(item.variations || [])
 	const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
 	const [isImageRemoved, setIsImageRemoved] = useState(false)
 
 	const { updateItem } = useItem(menuId, categoryId)
 	const { uploadImage, deleteImage } = useImage()
 
-	const confirmUpdate = async () => {
+	const {
+		control,
+		handleSubmit,
+		formState: { errors },
+	} = useForm<ItemFormData>({
+		resolver: zodResolver(itemSchema),
+		defaultValues: {
+			name: item.name,
+			description: item.description || '',
+			price: item.price.toString(),
+			currency: item.currency || '$',
+			variations:
+				item.variations?.map((v) => ({
+					name: v.name,
+					price: v.price?.toString() || '0',
+				})) || [],
+		},
+	})
+
+	const { fields, append, remove } = useFieldArray({
+		control,
+		name: 'variations',
+	})
+
+	const onSubmit = async (data: ItemFormData) => {
 		let updatedImageUrl = isImageRemoved ? null : imageUrl
 
 		if (newImage) {
@@ -68,18 +115,20 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 		}
 
 		const updatedItem = {
-			name,
-			description,
-			price: parseFloat(price),
+			...data,
+			price: parseFloat(data.price),
 			imageUrl: updatedImageUrl,
-			variations: variations.length > 0 ? variations : undefined,
+			variations: data.variations.map((v) => ({
+				...v,
+				price: parseFloat(v.price),
+			})),
 		}
 
 		updateItem(
 			{ itemId: item._id, data: updatedItem },
 			{
 				onSuccess: () => {
-					onUpdate(updatedItem) // Call the passed onUpdate prop
+					onUpdate(updatedItem)
 					onClose()
 					setIsConfirmDialogOpen(false)
 				},
@@ -139,33 +188,6 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 		return filenameWithExtension.split('.')[0]
 	}
 
-	const handleVariationChange = (
-		index: number,
-		field: 'name' | 'price',
-		value: string
-	) => {
-		const updatedVariations = [...variations]
-		if (field === 'name') {
-			updatedVariations[index].name = value
-		} else {
-			updatedVariations[index].price = parseFloat(value) || undefined
-		}
-		setVariations(updatedVariations)
-	}
-
-	const addVariation = () => {
-		setVariations([...variations, { name: '', price: undefined }])
-	}
-
-	const removeVariation = (index: number) => {
-		const updatedVariations = variations.filter((_, i) => i !== index)
-		setVariations(updatedVariations)
-	}
-
-	const handleSubmit = () => {
-		setIsConfirmDialogOpen(true)
-	}
-
 	return (
 		<>
 			<Dialog open={isOpen} onOpenChange={onClose}>
@@ -176,8 +198,11 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 							Edit Item
 						</DialogTitle>
 					</DialogHeader>
-					<div className='flex-grow overflow-y-auto px-4 py-2'>
-						<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+					<form
+						onSubmit={handleSubmit(onSubmit)}
+						className='flex-grow overflow-y-auto px-4 py-2'
+					>
+						<div className='space-y-4'>
 							<div className='space-y-2'>
 								<Label
 									htmlFor='name'
@@ -185,46 +210,96 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 								>
 									Name
 								</Label>
-								<Input
-									id='name'
-									value={name}
-									onChange={(e) => setName(e.target.value)}
-									placeholder='Item Name'
-									className='border-green-500 focus:ring-green-500 focus:border-green-500'
+								<Controller
+									name='name'
+									control={control}
+									render={({ field }) => (
+										<Input
+											{...field}
+											placeholder='Item Name'
+											className='w-full border-green-500 focus:ring-green-500 focus:border-green-500'
+										/>
+									)}
 								/>
+								{errors.name && (
+									<p className='text-red-500 text-xs'>{errors.name.message}</p>
+								)}
 							</div>
+
+							<div className='flex space-x-4'>
+								<div className='flex-1 space-y-2'>
+									<Label
+										htmlFor='price'
+										className='text-sm font-semibold text-gray-700'
+									>
+										Price
+									</Label>
+									<Controller
+										name='price'
+										control={control}
+										render={({ field }) => (
+											<Input
+												{...field}
+												type='number'
+												step='0.01'
+												placeholder='Item Price'
+												className='w-full border-green-500 focus:ring-green-500 focus:border-green-500'
+											/>
+										)}
+									/>
+									{errors.price && (
+										<p className='text-red-500 text-xs'>
+											{errors.price.message}
+										</p>
+									)}
+								</div>
+
+								<div className='flex-1 space-y-2'>
+									<Label
+										htmlFor='currency'
+										className='text-sm font-semibold text-gray-700'
+									>
+										Currency
+									</Label>
+									<Controller
+										name='currency'
+										control={control}
+										render={({ field }) => (
+											<CurrencyCombobox
+												value={field.value}
+												onChange={(value) => field.onChange(value)}
+											/>
+										)}
+									/>
+									{errors.currency && (
+										<p className='text-red-500 text-xs'>
+											{errors.currency.message}
+										</p>
+									)}
+								</div>
+							</div>
+
 							<div className='space-y-2'>
-								<Label
-									htmlFor='price'
-									className='text-sm font-semibold text-gray-700'
-								>
-									Price
-								</Label>
-								<Input
-									id='price'
-									type='number'
-									value={price}
-									onChange={(e) => setPrice(e.target.value)}
-									placeholder='Item Price'
-									className='border-green-500 focus:ring-green-500 focus:border-green-500'
-								/>
-							</div>
-							<div className='space-y-2 col-span-full'>
 								<Label
 									htmlFor='description'
 									className='text-sm font-semibold text-gray-700'
 								>
 									Description
 								</Label>
-								<Textarea
-									id='description'
-									value={description}
-									onChange={(e) => setDescription(e.target.value)}
-									placeholder='Item Description'
-									className='border-green-500 focus:ring-green-500 focus:border-green-500'
+								<Controller
+									name='description'
+									control={control}
+									render={({ field }) => (
+										<Textarea
+											{...field}
+											placeholder='Item Description'
+											className='w-full border-green-500 focus:ring-green-500 focus:border-green-500'
+										/>
+									)}
 								/>
 							</div>
-							<div className='space-y-2 col-span-full'>
+
+							<div className='space-y-2'>
 								<Label
 									htmlFor='image'
 									className='text-sm font-semibold text-gray-700'
@@ -234,8 +309,8 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 								{!isImageRemoved && (previewUrl || imageUrl) && (
 									<img
 										src={previewUrl || imageUrl}
-										alt={name}
-										className='w-full h-32 object-cover rounded mb-2 p-1 border border-green-600'
+										alt={item.name}
+										className='w-1/2 h-48 object-cover rounded mb-2 p-1 border border-green-600'
 									/>
 								)}
 								<div className='flex items-center space-x-2'>
@@ -260,46 +335,75 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 											variant='destructive'
 											onClick={handleRemoveImage}
 											className='py-2 px-4'
+											type='button'
 										>
 											Remove Image
 										</Button>
 									)}
 								</div>
 							</div>
-							<div className='space-y-2 col-span-full'>
+
+							<div className='space-y-2'>
 								<Label className='text-sm font-semibold text-gray-700 block'>
 									Variations
 								</Label>
-								{variations.map((variation, index) => (
-									<div key={index} className='flex gap-2 mb-2'>
-										<Input
-											value={variation.name}
-											onChange={(e) =>
-												handleVariationChange(index, 'name', e.target.value)
-											}
-											placeholder='Variation Name'
-											className='border-green-500 focus:ring-green-500 focus:border-green-500'
+								{fields.map((field, index) => (
+									<div key={field.id} className='flex gap-2 mb-2'>
+										<Controller
+											name={`variations.${index}.name` as const}
+											control={control}
+											render={({ field }) => (
+												<Input
+													{...field}
+													placeholder='Variation Name'
+													className='flex-1 border-green-500 focus:ring-green-500 focus:border-green-500'
+												/>
+											)}
 										/>
-										<Input
-											type='number'
-											value={variation.price?.toString() || ''}
-											onChange={(e) =>
-												handleVariationChange(index, 'price', e.target.value)
-											}
-											placeholder='Variation Price'
-											className='border-green-500 focus:ring-green-500 focus:border-green-500'
+										<Controller
+											name={`variations.${index}.price` as const}
+											control={control}
+											render={({ field }) => (
+												<Input
+													{...field}
+													type='number'
+													step='0.01'
+													placeholder='Variation Price'
+													className='w-24 border-green-500 focus:ring-green-500 focus:border-green-500'
+												/>
+											)}
 										/>
 										<Button
-											onClick={() => removeVariation(index)}
+											onClick={() => remove(index)}
 											variant='destructive'
 											className='px-2 py-0'
+											type='button'
 										>
 											<FaTrash />
 										</Button>
 									</div>
 								))}
+								{errors.variations && (
+									<p className='text-red-500 text-xs mt-1'>
+										{errors.variations.message}
+									</p>
+								)}
+								{fields.map((field, index) => (
+									<React.Fragment key={field.id}>
+										{errors.variations?.[index]?.name && (
+											<p className='text-red-500 text-xs mt-1'>
+												{errors.variations[index]?.name?.message}
+											</p>
+										)}
+										{errors.variations?.[index]?.price && (
+											<p className='text-red-500 text-xs mt-1'>
+												{errors.variations[index]?.price?.message}
+											</p>
+										)}
+									</React.Fragment>
+								))}
 								<Button
-									onClick={addVariation}
+									onClick={() => append({ name: '', price: '' })}
 									type='button'
 									className='mt-2 bg-green-500 hover:bg-green-600'
 								>
@@ -307,29 +411,30 @@ export const EditItemModal: React.FC<EditItemModalProps> = ({
 								</Button>
 							</div>
 						</div>
-					</div>
-					<DialogFooter className='flex-shrink-0 sm:justify-end mt-4'>
-						<Button
-							variant='outline'
-							onClick={onClose}
-							className='mr-2 border-gray-300 text-gray-700 hover:bg-gray-50'
-						>
-							Cancel
-						</Button>
-						<Button
-							onClick={handleSubmit}
-							className='bg-green-500 hover:bg-green-600 text-white'
-						>
-							Update Item
-						</Button>
-					</DialogFooter>
+						<DialogFooter className='flex-shrink-0 sm:justify-end mt-4'>
+							<Button
+								variant='outline'
+								onClick={onClose}
+								type='button'
+								className='mr-2 border-gray-300 text-gray-700 hover:bg-gray-50'
+							>
+								Cancel
+							</Button>
+							<Button
+								type='submit'
+								className='bg-green-500 hover:bg-green-600 text-white'
+							>
+								Update Item
+							</Button>
+						</DialogFooter>
+					</form>
 				</DialogContent>
 			</Dialog>
 
 			<ConfirmationDialog
 				isOpen={isConfirmDialogOpen}
 				onClose={() => setIsConfirmDialogOpen(false)}
-				onConfirm={confirmUpdate}
+				onConfirm={handleSubmit(onSubmit)}
 				title='Update Item'
 				description='Are you sure you want to update this item?'
 				confirmText='Update'
