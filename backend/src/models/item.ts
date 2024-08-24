@@ -5,6 +5,7 @@ export interface IItem {
 	name: string
 	description?: string
 	price: number
+	currency: string // New field
 	imageUrl?: string
 	variations?: {
 		name: string
@@ -20,6 +21,7 @@ const ItemSchema = new Schema<IItem>(
 		name: { type: String, required: true },
 		description: { type: String },
 		price: { type: Number, required: true },
+		currency: { type: String, required: true, default: '$' }, // New field with default value
 		imageUrl: { type: String },
 		variations: [
 			{

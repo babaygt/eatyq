@@ -15,20 +15,20 @@ interface CreateItemBody {
 	name?: string
 	description?: string
 	price?: number
+	currency?: string
 	imageUrl?: string
 	variations?: {
 		name: string
 		price?: number
 	}[]
 }
-
 export const createItem: RequestHandler<
 	CreateItemParams,
 	unknown,
 	CreateItemBody,
 	unknown
 > = async (req, res, next) => {
-	const { name, description, price, imageUrl, variations } = req.body
+	const { name, description, price, currency, imageUrl, variations } = req.body
 	const categoryId = req.params.categoryId
 
 	try {
@@ -47,6 +47,7 @@ export const createItem: RequestHandler<
 			name,
 			description,
 			price,
+			currency: currency || '$',
 			imageUrl,
 			variations,
 		})
@@ -101,6 +102,7 @@ interface UpdateItemBody {
 	name?: string
 	description?: string
 	price?: number
+	currency?: string
 	imageUrl?: string
 	variations?: {
 		name: string
@@ -114,7 +116,7 @@ export const updateItem: RequestHandler<
 	UpdateItemBody,
 	unknown
 > = async (req, res, next) => {
-	const { name, description, price, imageUrl, variations } = req.body
+	const { name, description, price, currency, imageUrl, variations } = req.body
 	const itemId = req.params.itemId
 
 	try {
@@ -126,7 +128,7 @@ export const updateItem: RequestHandler<
 
 		const item = await ItemModel.findByIdAndUpdate(
 			itemId,
-			{ name, description, price, imageUrl, variations },
+			{ name, description, price, currency, imageUrl, variations },
 			{ new: true }
 		)
 
