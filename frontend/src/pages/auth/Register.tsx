@@ -1,22 +1,20 @@
+import React from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { Link } from 'react-router-dom'
-
 import { useAuth } from '@/hooks/useAuth'
-
 import { Button } from '@/components/ui/button'
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormItem,
 	FormLabel,
 	FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-
+import { FaUser, FaEnvelope, FaLock, FaCheckCircle } from 'react-icons/fa'
 const FormSchema = z
 	.object({
 		username: z.string().min(2, {
@@ -42,7 +40,7 @@ const FormSchema = z
 		}
 	})
 
-const Register = () => {
+const Register: React.FC = () => {
 	const { register, isRegistering } = useAuth()
 
 	const form = useForm<z.infer<typeof FormSchema>>({
@@ -62,29 +60,33 @@ const Register = () => {
 	}
 
 	return (
-		<>
+		<div className='w-full max-w-md p-6 bg-white rounded-xl shadow-lg'>
+			<div className='text-center mb-6'>
+				<h1 className='text-2xl font-bold text-gray-900'>Create an Account</h1>
+				<p className='mt-2 text-sm text-gray-600'>
+					Join EatyQ and start creating your digital menu
+				</p>
+			</div>
+
 			<Form {...form}>
-				<form
-					onSubmit={form.handleSubmit(onSubmit)}
-					className='w-[80%] max-w-[400px] flex flex-col gap-3 border border-slate-950 p-4 rounded-md bg shadow-md bg-white'
-				>
-					<h1 className='text-3xl capitalize text-center mb-2'>Register</h1>
-					<p className='text-sm text-slate-500 dark:text-slate-400 text-center'>
-						Fill in the form below to register.
-					</p>
+				<form onSubmit={form.handleSubmit(onSubmit)} className='space-y-4'>
 					<FormField
 						control={form.control}
 						name='username'
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className='font-semibold'>Username</FormLabel>
+								<FormLabel className='flex items-center text-gray-700'>
+									<FaUser className='mr-2' />
+									Username
+								</FormLabel>
 								<FormControl>
-									<Input placeholder='Username' {...field} />
+									<Input
+										placeholder='Enter your username'
+										className='w-full'
+										{...field}
+									/>
 								</FormControl>
-								<FormDescription>
-									Please enter your username. Must be at least 2 characters.
-								</FormDescription>
-								<FormMessage />
+								<FormMessage className='text-red-500 text-xs' />
 							</FormItem>
 						)}
 					/>
@@ -94,12 +96,19 @@ const Register = () => {
 						name='email'
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className='font-semibold'>Email</FormLabel>
+								<FormLabel className='flex items-center text-gray-700'>
+									<FaEnvelope className='mr-2' />
+									Email
+								</FormLabel>
 								<FormControl>
-									<Input placeholder='Email' {...field} />
+									<Input
+										placeholder='Enter your email'
+										type='email'
+										className='w-full'
+										{...field}
+									/>
 								</FormControl>
-								<FormDescription>Please enter your email.</FormDescription>
-								<FormMessage />
+								<FormMessage className='text-red-500 text-xs' />
 							</FormItem>
 						)}
 					/>
@@ -109,14 +118,19 @@ const Register = () => {
 						name='password'
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className='font-semibold'>Password</FormLabel>
+								<FormLabel className='flex items-center text-gray-700'>
+									<FaLock className='mr-2' />
+									Password
+								</FormLabel>
 								<FormControl>
-									<Input type='password' placeholder='Password' {...field} />
+									<Input
+										placeholder='Create a password'
+										type='password'
+										className='w-full'
+										{...field}
+									/>
 								</FormControl>
-								<FormDescription>
-									Please enter your password. Must be at least 5 characters.
-								</FormDescription>
-								<FormMessage />
+								<FormMessage className='text-red-500 text-xs' />
 							</FormItem>
 						)}
 					/>
@@ -126,47 +140,53 @@ const Register = () => {
 						name='confirmpassword'
 						render={({ field }) => (
 							<FormItem>
-								<FormLabel className='font-semibold'>
+								<FormLabel className='flex items-center text-gray-700'>
+									<FaCheckCircle className='mr-2' />
 									Confirm Password
 								</FormLabel>
 								<FormControl>
 									<Input
+										placeholder='Confirm your password'
 										type='password'
-										placeholder='Confirm Password'
+										className='w-full'
 										{...field}
 									/>
 								</FormControl>
-								<FormDescription>
-									Please enter your password again. Must be same as above.
-								</FormDescription>
-								<FormMessage />
+								<FormMessage className='text-red-500 text-xs' />
 							</FormItem>
 						)}
 					/>
 
-					<p className='text-center '>
-						Already have an account?{' '}
-						<Link
-							to='/login'
-							className='text-green-600 hover:text-green-600/80'
-						>
-							Login
-						</Link>
-					</p>
-
-					<p className='text-center'>
-						Back to{' '}
-						<Link to='/' className='text-green-600 hover:text-green-600/80'>
-							Homepage
-						</Link>
-					</p>
-
-					<Button type='submit' disabled={isRegistering}>
-						{isRegistering ? 'Registering...' : 'Submit'}
+					<Button
+						type='submit'
+						disabled={isRegistering}
+						className='w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition duration-300'
+					>
+						{isRegistering ? 'Creating Account...' : 'Create Account'}
 					</Button>
 				</form>
 			</Form>
-		</>
+
+			<div className='text-center text-sm mt-4'>
+				<p className='text-gray-600'>
+					Already have an account?{' '}
+					<Link
+						to='/login'
+						className='text-green-600 hover:text-green-800 font-semibold'
+					>
+						Log in
+					</Link>
+				</p>
+				<p className='mt-2 text-gray-600'>
+					<Link
+						to='/'
+						className='text-green-600 hover:text-green-800 font-semibold'
+					>
+						Back to Homepage
+					</Link>
+				</p>
+			</div>
+		</div>
 	)
 }
 

@@ -78,13 +78,15 @@ const Dashboard: React.FC = () => {
 					<FaUtensils className='mr-2 text-green-600' />
 					Your Menus
 				</h2>
-				<Button
-					onClick={() => setIsCreateMenuModalOpen(true)}
-					className='bg-green-600 hover:bg-green-700'
-				>
-					<FaPlus className='mr-2' />
-					Create New Menu
-				</Button>
+				{menus && menus.length > 0 ? (
+					<Button
+						onClick={() => setIsCreateMenuModalOpen(true)}
+						className='bg-green-600 hover:bg-green-700'
+					>
+						<FaPlus className='mr-2' />
+						Create New Menu
+					</Button>
+				) : null}
 			</div>
 
 			{menus && menus.length > 0 ? (
@@ -101,7 +103,7 @@ const Dashboard: React.FC = () => {
 				</div>
 			) : (
 				<div className='text-center py-10 bg-gray-100 rounded-lg'>
-					<p className='text-xl text-gray-600 mb-4'>
+					<p className='text-xl font-semibold text-gray-600 mb-4'>
 						You haven't created any menus yet.
 					</p>
 					<Button

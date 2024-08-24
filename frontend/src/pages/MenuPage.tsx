@@ -35,6 +35,8 @@ const MenuPage: React.FC = () => {
 		selectedCategoryId!
 	)
 
+	console.log(items)
+
 	const filteredItems = useMemo(() => {
 		return (
 			items?.filter(
@@ -112,7 +114,7 @@ const MenuPage: React.FC = () => {
 			)}
 			<section className='mb-8 container'>
 				<div className='flex justify-between items-center mb-4'>
-					<h2 className='text-2xl font-semibold text-gray-700'>Categories</h2>
+					<h2 className='text-3xl font-bold text-gray-700'>Categories</h2>
 					<Button
 						onClick={() => setIsCreateCategoryModalOpen(true)}
 						className='bg-green-600 hover:bg-green-700'
@@ -129,6 +131,7 @@ const MenuPage: React.FC = () => {
 							isSelected={selectedCategoryId === category._id}
 							onClick={() => setSelectedCategoryId(category._id)}
 							onDeleteClick={() => setDeleteCategoryId(category._id)}
+							showDeleteButton={true}
 						/>
 					))}
 				</div>
