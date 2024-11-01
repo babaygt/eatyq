@@ -10,10 +10,8 @@ Welcome to **EatyQ**! This project allows users to effortlessly create and manag
   - [Tech Stack](#tech-stack)
   - [Project Structure](#project-structure)
   - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Installation](#installation)
-    - [Environment Variables](#environment-variables)
-    - [Running the Project](#running-the-project)
+    - [Using Docker (Recommended)](#using-docker-recommended)
+    - [Manual Setup](#manual-setup)
   - [API Endpoints](#api-endpoints)
   - [Usage](#usage)
     - [Authentication](#authentication)
@@ -58,6 +56,8 @@ mern-eatyq/
 │   │   ├── util/         # Utility functions
 │   │   ├── app.ts        # Express app setup
 │   │   └── server.ts     # Server startup script
+│   ├── Dockerfile     # Backend Docker configuration
+│   └── .dockerignore  # Backend Docker ignore rules
 ├── frontend/          # Frontend source code
 │   ├── src/
 │   │   ├── api/        # API service files
@@ -68,28 +68,64 @@ mern-eatyq/
 │   │   ├── store/      # Zustand stores
 │   │   ├── types/      # TypeScript types
 │   │   └── main.tsx    # Frontend entry point
-├── README.md          # Project README
-└── package.json       # Project dependencies
+│   ├── Dockerfile     # Frontend Docker configuration
+│   └── .dockerignore  # Frontend Docker ignore rules
+├── data/              # MongoDB data persistence
+├── docker-compose.yml # Docker Compose configuration
+└── README.md          # Project documentation
 ```
 
 ## Getting Started
 
-### Prerequisites
+### Using Docker (Recommended)
 
-- Node.js (v14+)
-- MongoDB (v4+)
-- Cloudinary Account (for image uploads)
-
-### Installation
-
-1. Clone the repository:
+1. **Clone the repository:**
 
    ```bash
    git clone https://github.com/babaygt/eatyq.git
    cd eatyq
    ```
 
-2. Install dependencies for both frontend and backend:
+2. **Set up environment variables:**
+   Create a `.env` file in the `backend` directory with:
+
+   ```env
+   PORT=5000
+   SESSION_SECRET=your_session_secret
+   CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+   CLOUDINARY_API_KEY=your_cloudinary_api_key
+   CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+   ```
+
+3. **Build and run with Docker Compose:**
+
+   ```bash
+   docker-compose up --build
+   ```
+
+   The application will be available at:
+
+   - Frontend: `http://localhost:5173`
+   - Backend: `http://localhost:5000`
+   - MongoDB: `mongodb://localhost:37017`
+
+### Manual Setup
+
+1. **Prerequisites:**
+
+   - Node.js (v14+)
+   - MongoDB (v4+)
+   - Cloudinary Account (for image uploads)
+
+2. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/babaygt/eatyq.git
+   cd eatyq
+   ```
+
+3. **Install dependencies:**
+
    ```bash
    cd backend
    npm install
@@ -97,36 +133,34 @@ mern-eatyq/
    npm install
    ```
 
-### Environment Variables
+4. **Set up environment variables:**
+   Create a `.env` file in the `backend` directory with:
 
-Create a `.env` file in the `backend` directory and add the following environment variables:
+   ```env
+   MONGO_URI=your_mongo_db_connection_string
+   PORT=5000
+   SESSION_SECRET=your_session_secret
+   CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+   CLOUDINARY_API_KEY=your_cloudinary_api_key
+   CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+   ```
 
-```plaintext
-MONGO_URI=your_mongo_db_connection_string
-PORT=5000
-SESSION_SECRET=your_session_secret
-CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
-CLOUDINARY_API_KEY=your_cloudinary_api_key
-CLOUDINARY_API_SECRET=your_cloudinary_api_secret
-```
-
-### Running the Project
-
-1. Start the backend server:
+5. **Start the backend server:**
 
    ```bash
    cd backend
    npm start
    ```
 
-2. Start the frontend development server:
+6. **Start the frontend development server:**
 
    ```bash
    cd frontend
-   npm start
+   npm run dev
    ```
 
-3. Open your browser and navigate to `http://localhost:5173`.
+7. **Access the application:**
+   Open your browser and navigate to `http://localhost:5173`
 
 ## API Endpoints
 

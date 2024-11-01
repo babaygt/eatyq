@@ -30,7 +30,7 @@ app.use(
 		},
 		rolling: true,
 		store: MongoStore.create({
-			mongoUrl: env.MONGO_URI,
+			mongoUrl: env.MONGO_URI || 'mongodb://mongodb/eatyq',
 		}),
 	})
 )

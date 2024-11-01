@@ -4,7 +4,7 @@ import mongoose from 'mongoose'
 const PORT = env.PORT
 
 mongoose
-	.connect(env.MONGO_URI)
+	.connect(env.MONGO_URI || 'mongodb://mongodb/eatyq')
 	.then(() => {
 		console.log('Connected to MongoDB')
 		app.listen(PORT!, () => {
